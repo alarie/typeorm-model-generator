@@ -42,6 +42,33 @@ export async function createModelFromDatabase(
     generationOptions: IGenerationOptions
 ) {
     let dbModel = await dataCollectionPhase(driver, connectionOptions);
+
+    if (generationOptions.includes) {
+        console.log(
+            "Limiting tables to those that match ",
+            generationOptions.includes
+        );
+        let includes = generationOptions.includes.map(
+            include => new RegExp(include)
+        );
+        dbModel = dbModel.filter(model => {
+            return includes.some(include => include.test(model.sqlEntityName));
+        });
+    }
+
+    if (generationOptions.excludes) {
+        console.log(
+            "Limiting tables to those that don't match ",
+            generationOptions.excludes
+        );
+        let excludes = generationOptions.excludes.map(
+            exclude => new RegExp(exclude)
+        );
+        dbModel = dbModel.filter(model => {
+            return excludes.some(exclude => !exclude.test(model.sqlEntityName));
+        });
+    }
+
     if (dbModel.length === 0) {
         TomgUtils.LogError(
             "Tables not found in selected database. Skipping creation of typeorm model.",

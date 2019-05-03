@@ -161,6 +161,16 @@ function GetUtilParametersByArgs() {
             boolean: true,
             default: false,
             describe: "Generate constructor allowing partial initialization"
+        })
+        .option("includes", {
+            default: undefined,
+            describe:
+                "Comma separated list of tablenames to include (RegExp patterns permitted)"
+        })
+        .option("excludes", {
+            default: undefined,
+            describe:
+                "Comma separated list of tablenames to exclude (RegExp patterns permitted)"
         }).argv;
 
     const driver = createDriver(argv.e);
@@ -196,6 +206,16 @@ function GetUtilParametersByArgs() {
         (generationOptions.noConfigs = argv.noConfig),
         (generationOptions.propertyVisibility = argv.pv),
         (generationOptions.relationIds = argv.relationIds),
+        (generationOptions.includes =
+            argv.includes &&
+            argv.includes.split(",").map((str: string) => str.trim())).filter(
+            Boolean
+        ),
+        (generationOptions.excludes =
+            argv.excludes &&
+            argv.excludes.split(",").map((str: string) => str.trim())).filter(
+            Boolean
+        ),
         (generationOptions.resultsPath = argv.o ? argv.o.toString() : null);
 
     return { driver, connectionOptions, generationOptions };
@@ -347,6 +367,14 @@ async function GetUtilParametersByInquirer() {
                     {
                         name: "Use specific naming convention",
                         value: "namingConvention"
+                    },
+                    {
+                        name: "Includes",
+                        value: "includes"
+                    },
+                    {
+                        name: "Excludes",
+                        value: "excludes"
                     }
                 ],
                 message: "Avaliable customizations",
@@ -386,6 +414,78 @@ async function GetUtilParametersByInquirer() {
                 generationOptions.customNamingStrategyPath = namingStrategyPath;
             } else {
                 generationOptions.customNamingStrategyPath = "";
+            }
+        }
+        if (customizations.includes("includes")) {
+            const includes = ((await inquirer.prompt([
+                {
+                    default: "",
+                    message: "Comma separated list of tablenames to include:",
+                    name: "includes",
+                    type: "input",
+                    validate(value) {
+                        const parts =
+                            typeof value === "string" &&
+                            value
+                                .split(",")
+                                .map((str: string) => str.trim())
+                                .filter(Boolean);
+                        return (
+                            !!parts ||
+                            "Please enter includes as a commaseparated list"
+                        );
+                    }
+                }
+            ])) as any).includes;
+
+            if (
+                includes &&
+                typeof includes === "string" &&
+                includes.trim() !== ""
+            ) {
+                // tslint:disable-next-line:no-var-requires
+                generationOptions.includes = includes
+                    .split(",")
+                    .map((str: string) => str.trim())
+                    .filter(Boolean);
+            } else {
+                generationOptions.includes = undefined;
+            }
+        }
+        if (customizations.includes("excludes")) {
+            const excludes = ((await inquirer.prompt([
+                {
+                    default: "",
+                    message: "Comma separated list of tablenames to exclude:",
+                    name: "excludes",
+                    type: "input",
+                    validate(value) {
+                        const parts =
+                            typeof value === "string" &&
+                            value
+                                .split(",")
+                                .map((str: string) => str.trim())
+                                .filter(Boolean);
+                        return (
+                            !!parts ||
+                            "Please enter excludes as a commaseparated list"
+                        );
+                    }
+                }
+            ])) as any).excludes;
+
+            if (
+                excludes &&
+                typeof excludes === "string" &&
+                excludes.trim() !== ""
+            ) {
+                // tslint:disable-next-line:no-var-requires
+                generationOptions.excludes = excludes
+                    .split(",")
+                    .map((str: string) => str.trim())
+                    .filter(Boolean);
+            } else {
+                generationOptions.excludes = undefined;
             }
         }
         if (customizations.includes("namingConvention")) {
